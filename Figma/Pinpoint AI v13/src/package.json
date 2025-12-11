@@ -1,0 +1,33 @@
+{
+  "name": "pinpoint-ai",
+  "version": "1.0.0",
+  "description": "AI tool discovery platform with Figma API integration",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "figma:sync": "node scripts/sync-figma-tokens.js sync",
+    "figma:sync:dry": "node scripts/sync-figma-tokens.js sync --dry-run",
+    "figma:compare": "node scripts/sync-figma-tokens.js compare",
+    "figma:assets": "node scripts/download-figma-assets.js assets",
+    "figma:icons": "node scripts/download-figma-assets.js icons",
+    "figma:manifest": "node scripts/download-figma-assets.js manifest",
+    "prebuild": "npm run figma:sync"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "next": "^14.0.0",
+    "lucide-react": "latest",
+    "motion": "latest",
+    "recharts": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.0.0",
+    "tailwindcss": "^4.0.0"
+  }
+}
