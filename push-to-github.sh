@@ -19,12 +19,20 @@ fi
 GITHUB_USERNAME=$(echo "$REMOTE_URL" | sed -E 's|.*github.com[:/]([^/]+)/.*|\1|')
 REPO_NAME=$(echo "$REMOTE_URL" | sed -E 's|.*github.com[:/][^/]+/([^/]+)(\.git)?$|\1|')
 
+# Validate extraction was successful
+if [ -z "$GITHUB_USERNAME" ] || [ -z "$REPO_NAME" ]; then
+    echo "❌ Error: Could not extract repository information from remote URL."
+    echo "Remote URL: $REMOTE_URL"
+    echo "Please ensure your remote URL is in the format: https://github.com/username/repo.git"
+    exit 1
+fi
+
 echo "🚀 Pushing to GitHub..."
 echo ""
 echo "Repository: $GITHUB_USERNAME/$REPO_NAME"
 echo ""
 echo "If prompted for credentials:"
-echo "  Username: $GITHUB_USERNAME"
+echo "  Username: [Your GitHub username]"
 echo "  Password: [Your Personal Access Token]"
 echo ""
 echo "Don't have a token? Create one at: https://github.com/settings/tokens"
@@ -39,6 +47,7 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "✅ Successfully pushed to GitHub!"
     echo "View your repository at: https://github.com/$GITHUB_USERNAME/$REPO_NAME"
+    # Note: Username is extracted from git remote, not hardcoded
 else
     echo ""
     echo "❌ Push failed. Make sure you have:"
