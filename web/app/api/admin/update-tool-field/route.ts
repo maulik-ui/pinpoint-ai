@@ -61,6 +61,18 @@ export async function POST(request: NextRequest) {
       domainData.functionality_blocks = value;
 
       updateData.domain_data = domainData;
+    } else if (field === "verification_history") {
+      // Verification history - store in domain_data
+      const { data: tool } = await supabase
+        .from("tools")
+        .select("domain_data")
+        .eq("id", toolId)
+        .single();
+
+      const domainData = tool?.domain_data || {};
+      domainData.verification_history = value;
+
+      updateData.domain_data = domainData;
     } else {
       return NextResponse.json(
         { error: `Unknown field: ${field}` },

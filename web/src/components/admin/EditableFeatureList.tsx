@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check, AlertTriangle, X, Loader2, Save, Plus, Trash2, GripVertical } from "lucide-react";
+import { Check, AlertTriangle, X, Loader2, Save, Plus, Trash2, GripVertical, Edit2 } from "lucide-react";
 
 interface Feature {
   id: string;
@@ -23,6 +23,7 @@ interface EditableFeatureListProps {
 
 export function EditableFeatureList({ features, toolId, onSave }: EditableFeatureListProps) {
   // Initialize state with features, preserving custom order
+  const [isEditing, setIsEditing] = useState(false);
   const [featureStates, setFeatureStates] = useState<Record<string, { status: string; feature_name: string; display_order: number }>>({});
   const [newFeatures, setNewFeatures] = useState<Array<{ tempId: string; status: string; feature_name: string; display_order: number }>>([]);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
@@ -251,12 +252,37 @@ export function EditableFeatureList({ features, toolId, onSave }: EditableFeatur
       setHasChanges(false);
       setNewFeatures([]);
       setDeletedIds(new Set());
+      setIsEditing(false);
     } catch (error) {
       console.error("Failed to save features:", error);
       alert("Failed to save features. Please try again.");
     } finally {
       setIsSaving(false);
     }
+  };
+  
+  const handleCancel = () => {
+    // Reset to original state
+    const initialState: Record<string, { status: string; feature_name: string; display_order: number }> = {};
+    const sortedFeatures = [...features].sort((a, b) => {
+      const orderA = a.display_order ?? 999999;
+      const orderB = b.display_order ?? 999999;
+      if (orderA !== orderB) return orderA - orderB;
+      return (a.feature_name || "").localeCompare(b.feature_name || "");
+    });
+    
+    sortedFeatures.forEach((feature, index) => {
+      initialState[feature.id] = {
+        status: feature.status || "works",
+        feature_name: feature.feature_name || "",
+        display_order: feature.display_order ?? index + 1,
+      };
+    });
+    setFeatureStates(initialState);
+    setNewFeatures([]);
+    setDeletedIds(new Set());
+    setHasChanges(false);
+    setIsEditing(false);
   };
 
   const getStatusConfig = (status: string) => {
@@ -310,8 +336,57 @@ export function EditableFeatureList({ features, toolId, onSave }: EditableFeatur
     })),
   ].sort((a, b) => a.display_order - b.display_order);
 
+  // Display mode - show features with edit icon
+  if (!isEditing) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="text-xs text-muted-foreground font-medium">
+            tool_features
+            <span className="ml-2 text-muted-foreground/70">
+              (20-60 characters per feature)
+            </span>
+          </div>
+          <button
+            onClick={() => setIsEditing(true)}
+            className="opacity-70 hover:opacity-100 transition-opacity p-1 rounded hover:bg-secondary"
+            title="Edit"
+          >
+            <Edit2 className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+        </div>
+        <div className="space-y-2">
+          {allFeatures.map((feature) => {
+            const config = getStatusConfig(feature.status);
+            const Icon = config.icon;
+            return (
+              <div
+                key={feature.id}
+                className="flex items-center gap-3 p-2.5 rounded-[12px] bg-secondary/20"
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${config.color}`}>
+                  <Icon className="w-4 h-4 text-white" strokeWidth={2.5} />
+                </div>
+                <p className="text-sm flex-1">{feature.feature_name}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Edit mode - show full editing interface
   return (
     <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="text-xs text-muted-foreground font-medium">
+          tool_features
+          <span className="ml-2 text-muted-foreground/70">
+            (20-60 characters per feature)
+          </span>
+        </div>
+      </div>
       {/* Add new feature input */}
       <div className="flex items-center gap-3 p-3 rounded-[12px] bg-primary/5 border-2 border-dashed border-primary/30">
         <input
@@ -484,7 +559,15 @@ export function EditableFeatureList({ features, toolId, onSave }: EditableFeatur
       )}
 
       {/* Save button */}
-      <div className="flex justify-end pt-4 border-t border-border/30">
+      <div className="flex justify-end gap-2 pt-4 border-t border-border/30">
+        <button
+          onClick={handleCancel}
+          disabled={isSaving}
+          className="px-6 py-2.5 rounded-full bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ fontWeight: 500 }}
+        >
+          Cancel
+        </button>
         <button
           onClick={handleSave}
           disabled={isSaving || !hasChanges}

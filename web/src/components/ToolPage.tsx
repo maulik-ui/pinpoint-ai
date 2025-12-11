@@ -24,7 +24,7 @@ import {
 // import { ContactForm } from "./ContactForm";
 // import { BookmarkButton } from "./BookmarkButton";
 import { Footer } from "./Footer";
-// import { SentimentPopup } from "./SentimentPopup";
+import { SentimentPopup } from "./SentimentPopup";
 import { Navigation } from "./Navigation";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -33,6 +33,9 @@ import { EditableText } from "./admin/EditableText";
 import { EditableList } from "./admin/EditableList";
 import { EditableFeatureList } from "./admin/EditableFeatureList";
 import { EditableProsConsList } from "./admin/EditableProsConsList";
+import { EditableFunctionalityBlocks } from "./admin/EditableFunctionalityBlocks";
+import { EditableVerificationHistory } from "./admin/EditableVerificationHistory";
+import { SimilarwebUpload } from "./admin/SimilarwebUpload";
 
 interface Feature {
   id: string;
@@ -273,7 +276,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
   const isDarkMode = theme === "dark";
   
   // Helper function to save tool fields
-  const saveToolField = async (field: string, value: string | string[]) => {
+  const saveToolField = async (field: string, value: string | string[] | any) => {
     const response = await fetch("/api/admin/update-tool-field", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -285,6 +288,14 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
     }
     // Reload page to show updated data
     window.location.reload();
+  };
+  
+  const saveFunctionalityBlocks = async (blocks: Array<{ title: string; description: string }>) => {
+    await saveToolField("functionality_blocks", blocks);
+  };
+  
+  const saveVerificationHistory = async (history: Array<{ date: string; title: string; description: string; isLatest?: boolean }>) => {
+    await saveToolField("verification_history", history);
   };
   
   // Helper function to save all feature changes at once
@@ -323,6 +334,41 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
   
   // Editor's note from domain_data or sentiment aggregate
   const editorNote = domainData.editor_note || sentimentAggregate?.cross_platform_summary || "";
+  
+  // Functionality blocks from domain_data or default placeholder
+  const functionalityBlocks = domainData.functionality_blocks && domainData.functionality_blocks.length > 0
+    ? domainData.functionality_blocks
+    : [
+        { title: "Natural Conversations", description: "Human-like responses that feel authentic" },
+        { title: "Context Memory", description: "Remembers your entire conversation" },
+        { title: "Regular Updates", description: "Constantly learning and improving" },
+        { title: "Versatile Use Cases", description: "Writing, coding, research, and more" }
+      ];
+  
+  // Verification history from domain_data or default placeholder
+  const verificationHistory = domainData.verification_history && domainData.verification_history.length > 0
+    ? domainData.verification_history
+    : [
+        {
+          date: "November 15, 2025",
+          title: "Full reverification completed",
+          description: "All features, pricing, and performance metrics verified by our team. Score updated to reflect current capabilities.",
+          isLatest: true
+        },
+        {
+          date: "August 22, 2025",
+          title: "Major update verification",
+          description: "New features and pricing changes reviewed and documented",
+          isLatest: false
+        },
+        {
+          date: "May 10, 2025",
+          title: "Initial verification",
+          description: "Tool added to Pinpoint database with full feature audit",
+          isLatest: false
+        }
+      ];
+  
   const [featuresExpanded, setFeaturesExpanded] = useState(false);
   const [prosConsExpanded, setProsConsExpanded] = useState(false);
   const [currentAlternativeIndex, setCurrentAlternativeIndex] = useState(0);
@@ -757,6 +803,9 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                     className="text-muted-foreground leading-relaxed text-[16px]"
                     displayClassName="text-muted-foreground leading-relaxed text-[16px]"
                     placeholder="AI-powered tool"
+                    label="short_description"
+                    minLength={50}
+                    maxLength={150}
                   />
                 ) : (
                   <p className="text-muted-foreground leading-relaxed text-[16px]">
@@ -888,6 +937,9 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                           displayClassName="text-lg text-muted-foreground max-w-3xl"
                           style={{ lineHeight: 1.6 }}
                           placeholder="AI-powered tool"
+                          label="short_description"
+                          minLength={50}
+                          maxLength={150}
                         />
                       ) : (
                         <p className="text-lg text-muted-foreground max-w-3xl" style={{ lineHeight: 1.6 }}>
@@ -943,6 +995,9 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                     className="w-full"
                     displayClassName="space-y-4"
                     placeholder="Enter tool overview..."
+                    label="tool_overview"
+                    minLength={400}
+                    maxLength={700}
                   />
                 ) : (
                   tool.capabilities_text ? (
@@ -961,38 +1016,38 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
               </div>
 
               {/* Key highlights */}
-              <div className="pt-3 grid md:grid-cols-2 gap-3">
-                <div className="flex items-start gap-3 p-3 bg-card rounded-[12px] border border-border/30">
-                  <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" strokeWidth={2.5} />
-                  <div>
-                    <p className="text-sm" style={{ fontWeight: 600 }}>Natural Conversations</p>
-                    <p className="text-sm text-muted-foreground mt-1">Human-like responses that feel authentic</p>
-                  </div>
+              {isAdmin ? (
+                <div className="pt-3">
+                  <EditableFunctionalityBlocks
+                    blocks={functionalityBlocks}
+                    onSave={saveFunctionalityBlocks}
+                    toolId={tool.id}
+                  />
                 </div>
-                <div className="flex items-start gap-3 p-3 bg-card rounded-[12px] border border-border/30">
-                  <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" strokeWidth={2.5} />
-                  <div>
-                    <p className="text-sm" style={{ fontWeight: 600 }}>Context Memory</p>
-                    <p className="text-sm text-muted-foreground mt-1">Remembers your entire conversation</p>
-                  </div>
+              ) : (
+                <div className="pt-3 grid md:grid-cols-2 gap-3">
+                  {functionalityBlocks.map((block, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 bg-card rounded-[12px] border border-border/30">
+                      <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" strokeWidth={2.5} />
+                      <div>
+                        <p className="text-sm" style={{ fontWeight: 600 }}>{block.title}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{block.description}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-start gap-3 p-3 bg-card rounded-[12px] border border-border/30">
-                  <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" strokeWidth={2.5} />
-                  <div>
-                    <p className="text-sm" style={{ fontWeight: 600 }}>Regular Updates</p>
-                    <p className="text-sm text-muted-foreground mt-1">Constantly learning and improving</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 bg-card rounded-[12px] border border-border/30">
-                  <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" strokeWidth={2.5} />
-                  <div>
-                    <p className="text-sm" style={{ fontWeight: 600 }}>Versatile Use Cases</p>
-                    <p className="text-sm text-muted-foreground mt-1">Writing, coding, research, and more</p>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </section>
+
+          {/* Similarweb Upload (Admin Only) */}
+          {isAdmin && (
+            <section className="py-6">
+              <div className="bg-card rounded-[20px] p-6 shadow-sm border border-border/50">
+                <SimilarwebUpload toolId={tool.id} toolSlug={tool.slug} />
+              </div>
+            </section>
+          )}
 
           {/* Traffic & Traction Charts */}
           <section id="traction" className="py-6">
@@ -1020,7 +1075,25 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                     <YAxis 
                       stroke={isDark ? "#B5AFA9" : "#8A847F"}
                       style={{ fontSize: '14px' }}
-                      tickFormatter={(value) => `${(value / 1000)}k`}
+                      tickFormatter={(value) => {
+                        if (value >= 1000000) {
+                          return `${(value / 1000000).toFixed(1)}M`;
+                        } else if (value >= 1000) {
+                          return `${(value / 1000).toFixed(0)}k`;
+                        }
+                        return value.toString();
+                      }}
+                      domain={(() => {
+                        if (trafficData.length === 0) return [0, 'dataMax'];
+                        const visits = trafficData.map(d => d.visits);
+                        const min = Math.min(...visits);
+                        const max = Math.max(...visits);
+                        const range = max - min;
+                        const padding = range * 0.2; // 20% padding on top and bottom
+                        const domainMin = Math.max(0, min - padding);
+                        const domainMax = max + padding;
+                        return [domainMin, domainMax];
+                      })()}
                     />
                     <Tooltip 
                       contentStyle={{ 
@@ -1031,6 +1104,18 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                         color: isDark ? '#F5F2EB' : '#3D3834'
                       }}
                       labelStyle={{ color: isDark ? '#F5F2EB' : '#3D3834' }}
+                      formatter={(value: number, name: string) => {
+                        let formatted: string;
+                        if (value >= 1000000) {
+                          formatted = `${(value / 1000000).toFixed(2)}M`;
+                        } else if (value >= 1000) {
+                          formatted = `${(value / 1000).toFixed(1)}k`;
+                        } else {
+                          formatted = value.toLocaleString();
+                        }
+                        return [formatted, name === 'visits' ? 'Visits' : name];
+                      }}
+                      labelFormatter={(label) => label}
                     />
                     <Line 
                       type="monotone" 
@@ -1057,7 +1142,25 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                     <YAxis 
                       stroke={isDark ? "#B5AFA9" : "#8A847F"}
                       style={{ fontSize: '14px' }}
-                      tickFormatter={(value) => `${(value / 1000)}k`}
+                      tickFormatter={(value) => {
+                        if (value >= 1000000) {
+                          return `${(value / 1000000).toFixed(1)}M`;
+                        } else if (value >= 1000) {
+                          return `${(value / 1000).toFixed(0)}k`;
+                        }
+                        return value.toString();
+                      }}
+                      domain={(() => {
+                        if (trafficData.length === 0) return [0, 'dataMax'];
+                        const visits = trafficData.map(d => d.visits);
+                        const min = Math.min(...visits);
+                        const max = Math.max(...visits);
+                        const range = max - min;
+                        const padding = range * 0.2; // 20% padding on top and bottom
+                        const domainMin = Math.max(0, min - padding);
+                        const domainMax = max + padding;
+                        return [domainMin, domainMax];
+                      })()}
                     />
                     <Tooltip 
                       contentStyle={{ 
@@ -1068,6 +1171,18 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                         color: isDark ? '#F5F2EB' : '#3D3834'
                       }}
                       labelStyle={{ color: isDark ? '#F5F2EB' : '#3D3834' }}
+                      formatter={(value: number, name: string) => {
+                        let formatted: string;
+                        if (value >= 1000000) {
+                          formatted = `${(value / 1000000).toFixed(2)}M`;
+                        } else if (value >= 1000) {
+                          formatted = `${(value / 1000).toFixed(1)}k`;
+                        } else {
+                          formatted = value.toLocaleString();
+                        }
+                        return [formatted, name === 'visits' ? 'Visits' : name];
+                      }}
+                      labelFormatter={(label) => label}
                     />
                     <Line 
                       type="monotone" 
@@ -1097,8 +1212,8 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                 )}
                 
                 {/* Key Metrics Grid */}
-                {(latestMonthVisits !== null || totalVisits !== null || pagesPerVisit !== null || bounceRate !== null || visitDurationSeconds !== null || globalRank !== null || industryRank !== null) && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mt-6 pt-6 border-t border-border/30">
+                {(latestMonthVisits !== null || pagesPerVisit !== null || bounceRate !== null || visitDurationSeconds !== null || globalRank !== null || industryRank !== null) && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-6 pt-6 border-t border-border/30">
                     {latestMonthVisits !== null && (
                       <div className="bg-secondary/30 rounded-[12px] p-4">
                         <div className="text-xs text-muted-foreground mb-1">Monthly Visits</div>
@@ -1106,14 +1221,6 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                           {formatNumber(latestMonthVisits)}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">Latest month</div>
-                      </div>
-                    )}
-                    {totalVisits !== null && (
-                      <div className="bg-secondary/30 rounded-[12px] p-4">
-                        <div className="text-xs text-muted-foreground mb-1">Total Visits</div>
-                        <div className="text-xl" style={{ fontWeight: 700 }}>
-                          {formatNumber(totalVisits)}
-                        </div>
                       </div>
                     )}
                     {pagesPerVisit !== null && (
@@ -1455,6 +1562,9 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                     displayClassName="space-y-4 text-lg text-foreground/85"
                     style={{ lineHeight: 1.8 }}
                     placeholder="Enter editor's notes..."
+                    label="editor_note"
+                    minLength={400}
+                    maxLength={700}
                   />
                 ) : (
                   <div className="space-y-4 text-lg text-foreground/85" style={{ lineHeight: 1.8 }}>
@@ -1483,63 +1593,48 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                   Verification History
                 </h2>
               </div>
-              <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-[20px] p-7 border-2 border-primary/20 shadow-sm">
-                <div className="relative">
-                  <div className="absolute left-8 top-8 bottom-8 w-0.5 bg-primary/30\" />
-                  <div className="space-y-5">
-                    <motion.div 
-                      className="flex items-start gap-4"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 }}
-                    >
-                      <div className="w-5 h-5 rounded-full bg-primary flex-shrink-0 mt-1 relative z-10 ring-4 ring-primary/20" />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <p className="text-sm text-muted-foreground">November 15, 2025</p>
-                          <span className="px-3 py-1 bg-primary/20 text-primary rounded-full text-xs" style={{ fontWeight: 600 }}>
-                            Latest
-                          </span>
-                        </div>
-                        <p className="mt-2" style={{ fontWeight: 600, fontSize: '1.05rem' }}>Full reverification completed</p>
-                        <p className="text-sm text-foreground/80 mt-2" style={{ lineHeight: 1.7 }}>
-                          All features, pricing, and performance metrics verified by our team. Score updated to reflect current capabilities.
-                        </p>
-                      </div>
-                    </motion.div>
-                    <motion.div 
-                      className="flex items-start gap-4"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <div className="w-5 h-5 rounded-full bg-primary/60 flex-shrink-0 mt-1 relative z-10 ring-4 ring-primary/10" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">August 22, 2025</p>
-                        <p className="mt-2" style={{ fontWeight: 600 }}>Major update verification</p>
-                        <p className="text-sm text-foreground/80 mt-2" style={{ lineHeight: 1.7 }}>
-                          New features and pricing changes reviewed and documented
-                        </p>
-                      </div>
-                    </motion.div>
-                    <motion.div 
-                      className="flex items-start gap-4"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <div className="w-5 h-5 rounded-full bg-primary/40 flex-shrink-0 mt-1 relative z-10 ring-4 ring-primary/5" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">May 10, 2025</p>
-                        <p className="mt-2" style={{ fontWeight: 600 }}>Initial verification</p>
-                        <p className="text-sm text-foreground/80 mt-2" style={{ lineHeight: 1.7 }}>
-                          Tool added to Pinpoint database with full feature audit
-                        </p>
-                      </div>
-                    </motion.div>
+              {isAdmin ? (
+                <EditableVerificationHistory
+                  items={verificationHistory}
+                  onSave={saveVerificationHistory}
+                  toolId={tool.id}
+                />
+              ) : (
+                <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-[20px] p-7 border-2 border-primary/20 shadow-sm">
+                  <div className="relative">
+                    <div className="absolute left-8 top-8 bottom-8 w-0.5 bg-primary/30" />
+                    <div className="space-y-5">
+                      {verificationHistory.map((item, index) => (
+                        <motion.div 
+                          key={index}
+                          className="flex items-start gap-4"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.1 + (index * 0.1) }}
+                        >
+                          <div className={`w-5 h-5 rounded-full flex-shrink-0 mt-1 relative z-10 ring-4 ${
+                            index === 0 ? 'bg-primary ring-primary/20' : index === 1 ? 'bg-primary/60 ring-primary/10' : 'bg-primary/40 ring-primary/5'
+                          }`} />
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <p className="text-sm text-muted-foreground">{item.date}</p>
+                              {index === 0 && (
+                                <span className="px-3 py-1 bg-primary/20 text-primary rounded-full text-xs" style={{ fontWeight: 600 }}>
+                                  Latest
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-2" style={{ fontWeight: 600, fontSize: '1.05rem' }}>{item.title}</p>
+                            <p className="text-sm text-foreground/80 mt-2" style={{ lineHeight: 1.7 }}>
+                              {item.description}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </section>
 
@@ -3160,12 +3255,12 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
       {/* <ContactForm open={contactFormOpen} onOpenChange={setContactFormOpen} /> */}
 
       {/* Sentiment Popup */}
-      {/* <SentimentPopup
+      <SentimentPopup
         isOpen={sentimentPopupOpen}
         onClose={() => setSentimentPopupOpen(false)}
         platform={selectedPlatform}
         score={selectedScore}
-      /> */}
+      />
     </div>
   );
 }

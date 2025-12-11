@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Save, Plus, Trash2, GripVertical } from "lucide-react";
+import { Loader2, Save, Plus, Trash2, GripVertical, Edit2 } from "lucide-react";
 
 interface EditableProsConsListProps {
   items: string[];
@@ -11,6 +11,7 @@ interface EditableProsConsListProps {
 }
 
 export function EditableProsConsList({ items, type, toolId, onSave }: EditableProsConsListProps) {
+  const [isEditing, setIsEditing] = useState(false);
   const [itemStates, setItemStates] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -113,6 +114,7 @@ export function EditableProsConsList({ items, type, toolId, onSave }: EditablePr
     try {
       await onSave(itemStates.map(item => item.trim()).filter(item => item.length > 0));
       setHasChanges(false);
+      setIsEditing(false);
     } catch (error) {
       console.error("Failed to save items:", error);
       alert("Failed to save items. Please try again.");
@@ -121,8 +123,55 @@ export function EditableProsConsList({ items, type, toolId, onSave }: EditablePr
     }
   };
 
+  const handleCancel = () => {
+    setItemStates([...items]);
+    setHasChanges(false);
+    setIsEditing(false);
+    setNewItem("");
+  };
+
+  // Display mode - show items with edit icon
+  if (!isEditing) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="text-xs text-muted-foreground font-medium">
+            {type}
+            <span className="ml-2 text-muted-foreground/70">
+              (20-60 characters per item)
+            </span>
+          </div>
+          <button
+            onClick={() => setIsEditing(true)}
+            className="opacity-70 hover:opacity-100 transition-opacity p-1 rounded hover:bg-secondary"
+            title="Edit"
+          >
+            <Edit2 className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+        </div>
+        <div className="space-y-2">
+          {itemStates.map((item, index) => (
+            <div key={index} className="flex items-start gap-3">
+              <div className={`w-2 h-2 rounded-full ${type === "pros" ? "bg-primary" : "bg-destructive"} flex-shrink-0 mt-2`} />
+              <p className="text-sm flex-1">{item}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Edit mode - show full editing interface
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="text-xs text-muted-foreground font-medium">
+          {type}
+          <span className="ml-2 text-muted-foreground/70">
+            (20-60 characters per item)
+          </span>
+        </div>
+      </div>
 
       {/* Add new item input */}
       <div className="flex items-center gap-3 p-3 rounded-[12px] bg-background/50 border-2 border-dashed border-border">
@@ -230,7 +279,15 @@ export function EditableProsConsList({ items, type, toolId, onSave }: EditablePr
       )}
 
       {/* Save button */}
-      <div className="flex justify-end pt-4 border-t border-border/30">
+      <div className="flex justify-end gap-2 pt-4 border-t border-border/30">
+        <button
+          onClick={handleCancel}
+          disabled={isSaving}
+          className="px-6 py-2.5 rounded-full bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ fontWeight: 500 }}
+        >
+          Cancel
+        </button>
         <button
           onClick={handleSave}
           disabled={isSaving || !hasChanges}

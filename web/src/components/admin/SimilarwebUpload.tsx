@@ -13,7 +13,7 @@ export function SimilarwebUpload({ toolId, toolSlug }: SimilarwebUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       const fileName = selectedFile.name.toLowerCase();
@@ -23,21 +23,18 @@ export function SimilarwebUpload({ toolId, toolSlug }: SimilarwebUploadProps) {
       }
       setFile(selectedFile);
       setStatus({ type: null, message: '' });
+      // Automatically upload the file
+      await uploadFile(selectedFile);
     }
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      setStatus({ type: 'error', message: 'Please select a file first.' });
-      return;
-    }
-
+  const uploadFile = async (fileToUpload: File) => {
     setUploading(true);
     setStatus({ type: null, message: '' });
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
       formData.append('toolId', toolId);
 
       const response = await fetch('/api/admin/similarweb/import', {
@@ -70,10 +67,17 @@ export function SimilarwebUpload({ toolId, toolSlug }: SimilarwebUploadProps) {
         type: 'error', 
         message: error.message || 'Failed to upload file. Please try again.' 
       });
+      setFile(null);
+      // Reset file input on error
+      const fileInput = document.getElementById('similarweb-file-input') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
     } finally {
       setUploading(false);
     }
   };
+
 
   return (
     <div className="space-y-4">
@@ -95,15 +99,23 @@ export function SimilarwebUpload({ toolId, toolSlug }: SimilarwebUploadProps) {
             htmlFor="similarweb-file-input"
             className="block w-full cursor-pointer"
           >
-            <div className="border-2 border-dashed border-border rounded-[12px] p-6 hover:border-primary/50 transition-colors">
+            <div className={`border-2 border-dashed rounded-[12px] p-6 transition-colors ${
+              uploading 
+                ? 'border-primary/50 bg-primary/5' 
+                : 'border-border hover:border-primary/50'
+            }`}>
               <div className="flex flex-col items-center justify-center gap-2">
-                <Upload className="w-8 h-8 text-muted-foreground" />
+                {uploading ? (
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                ) : (
+                  <Upload className="w-8 h-8 text-muted-foreground" />
+                )}
                 <div className="text-center">
                   <span className="text-sm font-medium">
-                    {file ? file.name : 'Click to select file'}
+                    {uploading ? 'Processing file...' : file ? file.name : 'Click to select file'}
                   </span>
                   <p className="text-xs text-muted-foreground mt-1">
-                    PDF or Excel (.xlsx, .xls)
+                    PDF or Excel (.xlsx, .xls) - Uploads automatically
                   </p>
                 </div>
               </div>
@@ -139,25 +151,6 @@ export function SimilarwebUpload({ toolId, toolSlug }: SimilarwebUploadProps) {
             </p>
           </div>
         )}
-
-        <button
-          onClick={handleUpload}
-          disabled={!file || uploading}
-          className="w-full rounded-full bg-primary text-primary-foreground px-6 py-3 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          style={{ fontWeight: 500 }}
-        >
-          {uploading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Uploading...
-            </>
-          ) : (
-            <>
-              <Upload className="w-4 h-4" />
-              Upload & Import Data
-            </>
-          )}
-        </button>
       </div>
     </div>
   );

@@ -43,8 +43,11 @@ export function ScoreCircle({ score, size = 112, strokeWidth = 6, maxScore = 10 
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <motion.span
-            className="text-2xl text-foreground"
-            style={{ fontWeight: 600 }}
+            className="text-foreground"
+            style={{ 
+              fontWeight: 600,
+              fontSize: size >= 80 ? '1.5rem' : size >= 60 ? '1.25rem' : '1rem'
+            }}
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.5 }}
