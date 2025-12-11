@@ -7,7 +7,11 @@
 REMOTE_URL=$(git remote get-url origin 2>/dev/null)
 if [ -z "$REMOTE_URL" ]; then
     echo "❌ Error: No remote 'origin' configured."
-    echo "Run: git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git"
+    echo ""
+    echo "To set up the remote, run:"
+    echo "  git remote add origin https://github.com/<your-username>/<your-repo>.git"
+    echo ""
+    echo "Or use the helper script: ./connect-to-github.sh <username> <repo-name>"
     exit 1
 fi
 
