@@ -144,26 +144,13 @@ export function SentimentPopup({ isOpen, onClose, platform, score }: SentimentPo
                       </div>
                     </div>
                   </motion.div>
-
-                  {/* Explanation */}
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.25 }}
-                    className="text-muted-foreground"
-                    style={{ fontSize: '15px', lineHeight: 1.7, maxWidth: '90%' }}
-                  >
-                    This score reflects aggregated community feedback from {platform}, analyzed across 
-                    thousands of authentic discussions. We evaluate sentiment polarity, engagement patterns, 
-                    and contextual relevance to calculate a weighted score.
-                  </motion.p>
                 </div>
 
                 {/* Divider */}
                 <div className="mb-8 h-px bg-border" />
 
-                {/* Quotes Section */}
-                <div className="space-y-5 max-h-[380px] overflow-y-auto pr-3 scrollbar-custom">
+                {/* Quotes Section - Moved Above Explanation */}
+                <div className="space-y-5 mb-8 max-h-[380px] overflow-y-auto pr-3 scrollbar-custom">
                   {data.quotes.map((quote, index) => (
                     <motion.div
                       key={index}
@@ -186,6 +173,17 @@ export function SentimentPopup({ isOpen, onClose, platform, score }: SentimentPo
                     </motion.div>
                   ))}
                 </div>
+
+                {/* Combined Disclaimer - Below Quotes */}
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.25 }}
+                  className="text-muted-foreground/60 mt-8 pt-6 border-t border-border/50"
+                  style={{ fontSize: '12px', lineHeight: 1.6 }}
+                >
+                  This score reflects aggregated community feedback from {platform}, analyzed across thousands of authentic discussions using AI analysis. We evaluate sentiment polarity, engagement patterns, and contextual relevance to calculate a weighted score. Sentiment scores are calculated from publicly available discussions and may not represent all user experiences. Scores are updated periodically and should be used as a general indicator rather than definitive assessment.
+                </motion.p>
               </div>
 
               {/* Custom scrollbar styles */}

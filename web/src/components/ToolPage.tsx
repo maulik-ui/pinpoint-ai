@@ -36,6 +36,9 @@ import { EditableProsConsList } from "./admin/EditableProsConsList";
 import { EditableFunctionalityBlocks } from "./admin/EditableFunctionalityBlocks";
 import { EditableVerificationHistory } from "./admin/EditableVerificationHistory";
 import { SimilarwebUpload } from "./admin/SimilarwebUpload";
+import { SectionToggle } from "./admin/SectionToggle";
+import { EditableScore } from "./admin/EditableScore";
+import { ScoreToggle } from "./admin/ScoreToggle";
 
 interface Feature {
   id: string;
@@ -83,6 +86,7 @@ interface AlternativeTool {
   short_description: string | null;
   logo_url: string | null;
   overall_score: number | null;
+  pinpoint_score?: number | null;
   company_name: string | null;
 }
 
@@ -106,6 +110,36 @@ interface Tool {
   backlinks_count: number | null;
   spam_score: number | null;
   company_name: string | null;
+  pinpoint_score?: number | null;
+  sentiment_score?: number | null;
+  features_score?: number | null;
+  adoption_score?: number | null;
+  pricing_score?: number | null;
+  verification_score?: number | null;
+  users_score?: number | null;
+  trust_score?: number | null;
+  section_visibility?: {
+    overview?: boolean;
+    traction?: boolean;
+    features?: boolean;
+    proscons?: boolean;
+    editor?: boolean;
+    verification?: boolean;
+    sentiment?: boolean;
+    demos?: boolean;
+    pricing?: boolean;
+    alternatives?: boolean;
+  } | null;
+  score_visibility?: {
+    pinpoint_score?: boolean;
+    sentiment_score?: boolean;
+    features_score?: boolean;
+    adoption_score?: boolean;
+    pricing_score?: boolean;
+    verification_score?: boolean;
+    users_score?: boolean;
+    trust_score?: boolean;
+  } | null;
 }
 
 interface PricingTier {
@@ -125,6 +159,7 @@ interface ToolPageProps {
   similarwebReport?: any | null;
   similarwebMonthlyData?: any[];
   isAdmin?: boolean;
+  isTopInCategory?: boolean; // Whether this tool is ranked #1 in its category
 }
 
 // Parse pricing tiers from capabilities_text
@@ -270,7 +305,7 @@ function parsePricingTiers(capabilitiesText: string | null): PricingTier[] {
   return uniqueTiers.slice(0, 4);
 }
 
-export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, alternatives = [], similarwebReport = null, similarwebMonthlyData = [], isAdmin = false }: ToolPageProps) {
+export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, alternatives = [], similarwebReport = null, similarwebMonthlyData = [], isAdmin = false, isTopInCategory = false }: ToolPageProps) {
   const router = useRouter();
   const { theme } = useTheme();
   const isDarkMode = theme === "dark";
@@ -368,6 +403,86 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
           isLatest: false
         }
       ];
+  
+  // Section visibility state - default all sections visible
+  const defaultVisibility = {
+    overview: true,
+    traction: true,
+    features: true,
+    proscons: true,
+    editor: true,
+    verification: true,
+    sentiment: true,
+    demos: true,
+    pricing: true,
+    alternatives: true,
+  };
+  
+  const [sectionVisibility, setSectionVisibility] = useState(
+    tool.section_visibility || defaultVisibility
+  );
+  
+  const handleSectionToggle = (section: string, visible: boolean) => {
+    setSectionVisibility((prev) => ({
+      ...prev,
+      [section]: visible,
+    }));
+  };
+  
+  const isSectionVisible = (section: string): boolean => {
+    // In admin mode, always show sections so admins can see and manage them
+    if (isAdmin) {
+      return true;
+    }
+    // In public mode, respect the visibility setting
+    return sectionVisibility[section as keyof typeof sectionVisibility] !== false;
+  };
+  
+  // Score visibility state - default all scores visible
+  const defaultScoreVisibility = {
+    pinpoint_score: true,
+    sentiment_score: true,
+    features_score: true,
+    adoption_score: true,
+    pricing_score: true,
+    verification_score: true,
+    users_score: true,
+    trust_score: true,
+  };
+  
+  const [scoreVisibility, setScoreVisibility] = useState(
+    tool.score_visibility || defaultScoreVisibility
+  );
+  
+  const handleScoreToggle = (scoreName: string, visible: boolean) => {
+    setScoreVisibility((prev) => ({
+      ...prev,
+      [scoreName]: visible,
+    }));
+  };
+  
+  const isScoreVisible = (scoreName: string): boolean => {
+    // In admin mode, always show scores so admins can see and manage them
+    if (isAdmin) {
+      return true;
+    }
+    // In public mode, respect the visibility setting
+    return scoreVisibility[scoreName as keyof typeof scoreVisibility] !== false;
+  };
+  
+  const saveScore = async (scoreName: string, value: number | null) => {
+    const response = await fetch("/api/admin/update-score", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ toolId: tool.id, scoreName, value }),
+    });
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || "Failed to save");
+    }
+    // Reload page to show updated data
+    window.location.reload();
+  };
   
   const [featuresExpanded, setFeaturesExpanded] = useState(false);
   const [prosConsExpanded, setProsConsExpanded] = useState(false);
@@ -637,7 +752,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
     logoUrl: alt.logo_url || null,
     description: alt.short_description || 'AI-powered alternative tool',
     bestFor: alt.category || 'Similar use case',
-    score: alt.overall_score || 7.5,
+    score: alt.pinpoint_score ?? alt.overall_score ?? 7.5,
     pricing: 'Various',
     image: alt.logo_url || 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400',
     pros: [alt.short_description || 'AI-powered features'],
@@ -850,7 +965,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                     
                   {/* Right side - Score Circle */}
                   <div className="flex-shrink-0">
-                    <ScoreCircle score={tool.overall_score || 0} size={64} strokeWidth={6}  />
+                    <ScoreCircle score={tool.pinpoint_score ?? tool.overall_score ?? 0} size={64} strokeWidth={6}  />
                   </div>
                   </div>
                 </motion.div>
@@ -873,10 +988,10 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                       <ImageWithFallback
                         src={tool.logo_url || ''}
                         alt={tool.name}
-                        className="w-16 h-16 group-hover:scale-110 transition-transform rounded-[12px]"
+                        className="w-[83px] h-[83px] group-hover:scale-110 transition-transform rounded-[12px]"
                       />
                     </motion.a>
-                    {tool.category && (
+                    {tool.category && isTopInCategory && (tool.pinpoint_score ?? tool.overall_score) !== null && (tool.pinpoint_score ?? tool.overall_score) !== undefined && (tool.pinpoint_score ?? tool.overall_score)! > 0 && (
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -884,13 +999,9 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.98 }}
                       >
-                        <Link
-                          href={`/category/${tool.category.toLowerCase().replace(/\s+/g, '-')}`}
-                          className="relative px-4 py-1.5 rounded-full text-center whitespace-nowrap border-2 bg-transparent hover:bg-[#b3623f]/5 transition-all cursor-pointer"
-                          style={{ borderColor: '#b3623f' }}
-                        >
-                          <span className="relative text-xs" style={{ fontWeight: 700, color: '#b3623f' }}>#{tool.category}</span>
-                        </Link>
+                        <span className="inline-block px-3 py-1.5 rounded-full text-xs border-2 border-orange-400/80 bg-transparent text-orange-300 font-bold">
+                          🏆 #1 in {tool.category}
+                        </span>
                       </motion.div>
                     )}
                   </div>
@@ -975,12 +1086,40 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
             </div>
           </section>
 
+          {/* Admin: Edit Scores Button */}
+          {isAdmin && (
+            <section className="py-4">
+              <div className="flex justify-center">
+                <motion.button
+                  onClick={() => setScoresDialogOpen(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-[16px] border border-primary/30 transition-all"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <BarChart3 className="w-5 h-5" strokeWidth={1.5} />
+                  <span style={{ fontWeight: 600 }}>Edit Scores</span>
+                </motion.button>
+              </div>
+            </section>
+          )}
+
           {/* Cozy Summary Block */}
+          {isSectionVisible("overview") && (
           <section id="overview" className="py-6">
             <div className="space-y-5">
-              <div className="flex items-center gap-2">
-                <FileText className="w-7 h-7 text-primary" strokeWidth={1.5} />
-                <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>What is {tool.name}?</h2>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-7 h-7 text-primary" strokeWidth={1.5} />
+                  <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>Overview</h2>
+                </div>
+                {isAdmin && (
+                  <SectionToggle
+                    toolId={tool.id}
+                    section="overview"
+                    visible={sectionVisibility.overview}
+                    onToggle={handleSectionToggle}
+                  />
+                )}
               </div>
               
               {/* Detailed paragraphs */}
@@ -1039,6 +1178,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
               )}
             </div>
           </section>
+          )}
 
           {/* Similarweb Upload (Admin Only) */}
           {isAdmin && (
@@ -1050,11 +1190,22 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
           )}
 
           {/* Traffic & Traction Charts */}
+          {isSectionVisible("traction") && (
           <section id="traction" className="py-6">
             <div className="space-y-5">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-7 h-7 text-primary" strokeWidth={1.5} />
-                <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>Traffic & Growth</h2>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-7 h-7 text-primary" strokeWidth={1.5} />
+                  <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>Traffic & Growth</h2>
+                </div>
+                {isAdmin && (
+                  <SectionToggle
+                    toolId={tool.id}
+                    section="traction"
+                    visible={sectionVisibility.traction}
+                    onToggle={handleSectionToggle}
+                  />
+                )}
               </div>
               <div className="bg-card rounded-[20px] p-6 shadow-sm border border-border/50">
                 <h3 className="text-lg mb-6 text-muted-foreground" style={{ fontWeight: 500 }}>
@@ -1273,15 +1424,27 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
               </div>
             </div>
           </section>
+          )}
 
           {/* Feature Checklist with larger icons and color coding */}
+          {isSectionVisible("features") && (
           <section id="features" className="py-6">
             <div className="space-y-5">
-              <div className="flex items-center gap-2">
-                <ClipboardCheck className="w-7 h-7 text-primary" strokeWidth={1.5} />
-                <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
-                  Feature Verification
-                </h2>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <ClipboardCheck className="w-7 h-7 text-primary" strokeWidth={1.5} />
+                  <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
+                    Feature Verification
+                  </h2>
+                </div>
+                {isAdmin && (
+                  <SectionToggle
+                    toolId={tool.id}
+                    section="features"
+                    visible={sectionVisibility.features}
+                    onToggle={handleSectionToggle}
+                  />
+                )}
               </div>
               <div className="bg-card rounded-[20px] p-6 shadow-sm border border-border/50">
                 {isAdmin ? (
@@ -1333,9 +1496,21 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
               </div>
             </div>
           </section>
+          )}
 
           {/* Pros & Cons with divider and background tints */}
+          {isSectionVisible("proscons") && (
           <section id="proscons" className="py-6">
+            {isAdmin && (
+              <div className="flex items-center justify-end mb-4">
+                <SectionToggle
+                  toolId={tool.id}
+                  section="proscons"
+                  visible={sectionVisibility.proscons}
+                  onToggle={handleSectionToggle}
+                />
+              </div>
+            )}
             {isMobile ? (
               <div className="space-y-4">
                 <div className="overflow-hidden">
@@ -1541,16 +1716,28 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
             </div>
             )}
           </section>
+          )}
 
           {/* Editor's Notes */}
+          {isSectionVisible("editor") && (
           <section id="editor" className="py-6">
             <div className="bg-secondary/40 rounded-[20px] p-7">
               <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <UserPen className="w-7 h-7 text-primary" strokeWidth={1.5} />
-                  <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
-                    Editor's Notes
-                  </h2>
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <div className="flex items-center gap-2">
+                    <UserPen className="w-7 h-7 text-primary" strokeWidth={1.5} />
+                    <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
+                      Editor's Notes
+                    </h2>
+                  </div>
+                  {isAdmin && (
+                    <SectionToggle
+                      toolId={tool.id}
+                      section="editor"
+                      visible={sectionVisibility.editor}
+                      onToggle={handleSectionToggle}
+                    />
+                  )}
                 </div>
                 {isAdmin ? (
                   <EditableText
@@ -1583,15 +1770,27 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
               </div>
             </div>
           </section>
+          )}
 
           {/* Verification History - MOVED UP FOR PROMINENCE */}
+          {isSectionVisible("verification") && (
           <section id="verification" className="py-6">
             <div className="space-y-5">
-              <div className="flex items-center gap-2">
-                <Shield className="w-7 h-7 text-primary" strokeWidth={1.5} />
-                <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
-                  Verification History
-                </h2>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-7 h-7 text-primary" strokeWidth={1.5} />
+                  <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
+                    Verification History
+                  </h2>
+                </div>
+                {isAdmin && (
+                  <SectionToggle
+                    toolId={tool.id}
+                    section="verification"
+                    visible={sectionVisibility.verification}
+                    onToggle={handleSectionToggle}
+                  />
+                )}
               </div>
               {isAdmin ? (
                 <EditableVerificationHistory
@@ -1637,15 +1836,27 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
               )}
             </div>
           </section>
+          )}
 
           {/* Sentiment Analysis with platform icons */}
+          {isSectionVisible("sentiment") && (
           <section id="sentiment" className="py-6">
             <div className="bg-secondary/30 rounded-[20px] p-7">
-              <div className="flex items-center gap-2 mb-5">
-                <BarChart3 className="w-7 h-7 text-primary" strokeWidth={1.5} />
-                <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
-                  Community Sentiment
-                </h2>
+              <div className="flex items-center justify-between gap-2 mb-5">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-7 h-7 text-primary" strokeWidth={1.5} />
+                  <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
+                    Community Sentiment
+                  </h2>
+                </div>
+                {isAdmin && (
+                  <SectionToggle
+                    toolId={tool.id}
+                    section="sentiment"
+                    visible={sectionVisibility.sentiment}
+                    onToggle={handleSectionToggle}
+                  />
+                )}
               </div>
               <div className="grid grid-cols-3 md:grid-cols-3 gap-3 md:gap-5">
                 <motion.div 
@@ -1747,15 +1958,27 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
               </div>
             </div>
           </section>
+          )}
 
           {/* Screenshots & Demo */}
+          {isSectionVisible("demos") && (
           <section id="demos" className="py-6">
             <div className="space-y-5">
-              <div className="flex items-center gap-2">
-                <Image className="w-7 h-7 text-primary" strokeWidth={1.5} />
-                <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
-                  Demos
-                </h2>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Image className="w-7 h-7 text-primary" strokeWidth={1.5} />
+                  <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
+                    Demos
+                  </h2>
+                </div>
+                {isAdmin && (
+                  <SectionToggle
+                    toolId={tool.id}
+                    section="demos"
+                    visible={sectionVisibility.demos}
+                    onToggle={handleSectionToggle}
+                  />
+                )}
               </div>
               
               {/* Mobile Carousel */}
@@ -1894,15 +2117,27 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
               )}
             </div>
           </section>
+          )}
 
           {/* Pricing Breakdown with improved badge */}
+          {isSectionVisible("pricing") && (
           <section id="pricing" className="py-8">
             <div className="space-y-5">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-7 h-7 text-primary" strokeWidth={1.5} />
-                <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
-                  Pricing
-                </h2>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-7 h-7 text-primary" strokeWidth={1.5} />
+                  <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
+                    Pricing
+                  </h2>
+                </div>
+                {isAdmin && (
+                  <SectionToggle
+                    toolId={tool.id}
+                    section="pricing"
+                    visible={sectionVisibility.pricing}
+                    onToggle={handleSectionToggle}
+                  />
+                )}
               </div>
               
               {/* Mobile Carousel for Pricing */}
@@ -2110,16 +2345,28 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
               </div>
             </div>
           </section>
+          )}
 
           {/* Recommended Alternatives - Completely Redesigned */}
+          {isSectionVisible("alternatives") && (
           <section className="py-6" id="alternatives">
             <div className="space-y-5">
               <div className="text-center space-y-3">
-                <div className="flex items-center gap-2">
-                  <GitBranch className="w-7 h-7 text-primary" strokeWidth={1.5} />
-                  <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
-                    Alternatives
-                  </h2>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 mx-auto">
+                    <GitBranch className="w-7 h-7 text-primary" strokeWidth={1.5} />
+                    <h2 className="text-2xl tracking-tight" style={{ fontWeight: 700 }}>
+                      Alternatives
+                    </h2>
+                  </div>
+                  {isAdmin && (
+                    <SectionToggle
+                      toolId={tool.id}
+                      section="alternatives"
+                      visible={sectionVisibility.alternatives}
+                      onToggle={handleSectionToggle}
+                    />
+                  )}
                 </div>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
                   Similar tools worth considering, each with unique strengths
@@ -2316,6 +2563,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
               )}
             </div>
           </section>
+          )}
 
           {/* Comments & Reviews Section */}
           <section className="py-6" id="comments">
@@ -2746,7 +2994,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                 
                 {/* Large Score Display */}
                 <div className="flex flex-col items-center py-2">
-                  <ScoreCircle score={tool.overall_score || 0} size={96} strokeWidth={10} />
+                  <ScoreCircle score={tool.pinpoint_score ?? tool.overall_score ?? 0} size={96} strokeWidth={10} />
                 </div>
 
                 {/* Verification badge */}
@@ -2765,11 +3013,11 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                 {/* Quick stats */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="text-center p-2 bg-card/60 rounded-[10px] border border-border/20">
-                    <div className="text-base" style={{ fontWeight: 700, color: "#6E7E55" }}>{sentimentAggregate?.final_score_0_to_10?.toFixed(1) || tool.overall_score?.toFixed(1) || '8.0'}</div>
+                    <div className="text-base" style={{ fontWeight: 700, color: "#6E7E55" }}>{(tool.sentiment_score ?? sentimentAggregate?.final_score_0_to_10 ?? tool.overall_score)?.toFixed(1) || '8.0'}</div>
                     <div className="text-xs text-muted-foreground">Sentiment</div>
                   </div>
                   <div className="text-center p-2 bg-card/60 rounded-[10px] border border-border/20">
-                    <div className="text-base" style={{ fontWeight: 700, color: "#6E7E55" }}>{tool.domain_score?.toFixed(1) || tool.overall_score?.toFixed(1) || '8.0'}</div>
+                    <div className="text-base" style={{ fontWeight: 700, color: "#6E7E55" }}>{(tool.adoption_score ?? tool.domain_score ?? tool.overall_score)?.toFixed(1) || '8.0'}</div>
                     <div className="text-xs text-muted-foreground">Traction</div>
                   </div>
                 </div>
@@ -2938,110 +3186,286 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
           
           <div className="space-y-2.5 py-2">
             {/* Pinpoint Score - Featured at top center */}
+            {isScoreVisible("pinpoint_score") && (
             <div className="p-4 rounded-[16px] bg-primary/10 border-2 border-primary/30 text-center space-y-1">
-              <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Pinpoint Score</p>
-              <p className="text-5xl tracking-tight" style={{ fontWeight: 700, color: "#6E7E55" }}>{tool.overall_score?.toFixed(1) || '8.0'}</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Pinpoint Score</p>
+                {isAdmin && (
+                  <ScoreToggle
+                    toolId={tool.id}
+                    scoreName="pinpoint_score"
+                    visible={scoreVisibility.pinpoint_score}
+                    onToggle={handleScoreToggle}
+                  />
+                )}
+              </div>
+              {isAdmin ? (
+                <EditableScore
+                  value={tool.pinpoint_score ?? tool.overall_score}
+                  onSave={(v) => saveScore("pinpoint_score", v)}
+                  label="Pinpoint Score"
+                />
+              ) : (
+                <p className="text-5xl tracking-tight" style={{ fontWeight: 700, color: "#6E7E55" }}>
+                  {(tool.pinpoint_score ?? tool.overall_score)?.toFixed(1) || '8.0'}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground/80">Weighted average of all metrics</p>
             </div>
+            )}
 
             {/* Grid of remaining scores */}
             <div className="grid grid-cols-2 gap-2">
               {/* Public Sentiment */}
+              {isScoreVisible("sentiment_score") && (
               <div 
-                className="p-3 rounded-[12px] bg-card/50 hover:bg-card/80 transition-all duration-300 space-y-1 cursor-pointer hover:shadow-md"
-                onClick={() => {
+                className={`p-3 rounded-[12px] bg-card/50 transition-all duration-300 space-y-1 ${!isAdmin ? 'hover:bg-card/80 cursor-pointer hover:shadow-md' : ''}`}
+                onClick={!isAdmin ? () => {
                   setScoresDialogOpen(false);
                   setTimeout(() => {
                     document.getElementById('sentiment')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }, 100);
-                }}
+                } : undefined}
               >
-                <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Public Sentiment</p>
-                <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#6E7E55" }}>{sentimentRuns?.x?.overall_sentiment_0_to_10?.toFixed(1) || sentimentAggregate?.final_score_0_to_10?.toFixed(1) || tool.overall_score?.toFixed(1) || '8.0'}</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Public Sentiment</p>
+                  {isAdmin && (
+                    <ScoreToggle
+                      toolId={tool.id}
+                      scoreName="sentiment_score"
+                      visible={scoreVisibility.sentiment_score}
+                      onToggle={handleScoreToggle}
+                    />
+                  )}
+                </div>
+                {isAdmin ? (
+                  <EditableScore
+                    value={tool.sentiment_score ?? (sentimentRuns?.x?.overall_sentiment_0_to_10 || sentimentAggregate?.final_score_0_to_10 || tool.overall_score)}
+                    onSave={(v) => saveScore("sentiment_score", v)}
+                    label="Sentiment Score"
+                  />
+                ) : (
+                  <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#6E7E55" }}>
+                    {(tool.sentiment_score ?? sentimentRuns?.x?.overall_sentiment_0_to_10 ?? sentimentAggregate?.final_score_0_to_10 ?? tool.overall_score)?.toFixed(1) || '8.0'}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground/80 leading-tight">Community feedback across platforms</p>
               </div>
+              )}
 
               {/* Features Accuracy */}
+              {isScoreVisible("features_score") && (
               <div 
-                className="p-3 rounded-[12px] bg-card/50 hover:bg-card/80 transition-all duration-300 space-y-1 cursor-pointer hover:shadow-md"
-                onClick={() => {
+                className={`p-3 rounded-[12px] bg-card/50 transition-all duration-300 space-y-1 ${!isAdmin ? 'hover:bg-card/80 cursor-pointer hover:shadow-md' : ''}`}
+                onClick={!isAdmin ? () => {
                   setScoresDialogOpen(false);
                   setTimeout(() => {
                     document.getElementById('features')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }, 100);
-                }}
+                } : undefined}
               >
-                <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Features Accuracy</p>
-                <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#C9A94E" }}>7.8</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Features Accuracy</p>
+                  {isAdmin && (
+                    <ScoreToggle
+                      toolId={tool.id}
+                      scoreName="features_score"
+                      visible={scoreVisibility.features_score}
+                      onToggle={handleScoreToggle}
+                    />
+                  )}
+                </div>
+                {isAdmin ? (
+                  <EditableScore
+                    value={tool.features_score ?? 7.8}
+                    onSave={(v) => saveScore("features_score", v)}
+                    label="Features Score"
+                  />
+                ) : (
+                  <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#C9A94E" }}>
+                    {tool.features_score?.toFixed(1) || '7.8'}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground/80 leading-tight">Claims vs. actual capabilities</p>
               </div>
+              )}
 
               {/* Market Adoption */}
+              {isScoreVisible("adoption_score") && (
               <div 
-                className="p-3 rounded-[12px] bg-card/50 hover:bg-card/80 transition-all duration-300 space-y-1 cursor-pointer hover:shadow-md"
-                onClick={() => {
+                className={`p-3 rounded-[12px] bg-card/50 transition-all duration-300 space-y-1 ${!isAdmin ? 'hover:bg-card/80 cursor-pointer hover:shadow-md' : ''}`}
+                onClick={!isAdmin ? () => {
                   setScoresDialogOpen(false);
                   setTimeout(() => {
                     document.getElementById('traction')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }, 100);
-                }}
+                } : undefined}
               >
-                <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Market Adoption</p>
-                <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#6E7E55" }}>{tool.domain_score?.toFixed(1) || tool.overall_score?.toFixed(1) || '8.0'}</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Market Adoption</p>
+                  {isAdmin && (
+                    <ScoreToggle
+                      toolId={tool.id}
+                      scoreName="adoption_score"
+                      visible={scoreVisibility.adoption_score}
+                      onToggle={handleScoreToggle}
+                    />
+                  )}
+                </div>
+                {isAdmin ? (
+                  <EditableScore
+                    value={tool.adoption_score ?? tool.domain_score ?? tool.overall_score}
+                    onSave={(v) => saveScore("adoption_score", v)}
+                    label="Adoption Score"
+                  />
+                ) : (
+                  <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#6E7E55" }}>
+                    {(tool.adoption_score ?? tool.domain_score ?? tool.overall_score)?.toFixed(1) || '8.0'}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground/80 leading-tight">Adoption and user growth</p>
               </div>
+              )}
 
               {/* Pricing Fairness */}
+              {isScoreVisible("pricing_score") && (
               <div 
-                className="p-3 rounded-[12px] bg-card/50 hover:bg-card/80 transition-all duration-300 space-y-1 cursor-pointer hover:shadow-md"
-                onClick={() => {
+                className={`p-3 rounded-[12px] bg-card/50 transition-all duration-300 space-y-1 ${!isAdmin ? 'hover:bg-card/80 cursor-pointer hover:shadow-md' : ''}`}
+                onClick={!isAdmin ? () => {
                   setScoresDialogOpen(false);
                   setTimeout(() => {
                     document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }, 100);
-                }}
+                } : undefined}
               >
-                <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Pricing Fairness</p>
-                <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#E06A28" }}>6.5</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Pricing Fairness</p>
+                  {isAdmin && (
+                    <ScoreToggle
+                      toolId={tool.id}
+                      scoreName="pricing_score"
+                      visible={scoreVisibility.pricing_score}
+                      onToggle={handleScoreToggle}
+                    />
+                  )}
+                </div>
+                {isAdmin ? (
+                  <EditableScore
+                    value={tool.pricing_score ?? 6.5}
+                    onSave={(v) => saveScore("pricing_score", v)}
+                    label="Pricing Score"
+                  />
+                ) : (
+                  <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#E06A28" }}>
+                    {tool.pricing_score?.toFixed(1) || '6.5'}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground/80 leading-tight">Value for money</p>
               </div>
+              )}
 
               {/* Pro Verification */}
+              {isScoreVisible("verification_score") && (
               <div 
-                className="p-3 rounded-[12px] bg-card/50 hover:bg-card/80 transition-all duration-300 space-y-1 cursor-pointer hover:shadow-md"
-                onClick={() => {
+                className={`p-3 rounded-[12px] bg-card/50 transition-all duration-300 space-y-1 ${!isAdmin ? 'hover:bg-card/80 cursor-pointer hover:shadow-md' : ''}`}
+                onClick={!isAdmin ? () => {
                   setScoresDialogOpen(false);
                   setTimeout(() => {
                     document.getElementById('editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }, 100);
-                }}
+                } : undefined}
               >
-                <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Pro Verification</p>
-                <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#6E7E55" }}>8.6</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Pro Verification</p>
+                  {isAdmin && (
+                    <ScoreToggle
+                      toolId={tool.id}
+                      scoreName="verification_score"
+                      visible={scoreVisibility.verification_score}
+                      onToggle={handleScoreToggle}
+                    />
+                  )}
+                </div>
+                {isAdmin ? (
+                  <EditableScore
+                    value={tool.verification_score ?? 8.6}
+                    onSave={(v) => saveScore("verification_score", v)}
+                    label="Verification Score"
+                  />
+                ) : (
+                  <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#6E7E55" }}>
+                    {tool.verification_score?.toFixed(1) || '8.6'}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground/80 leading-tight">Expert review and validation</p>
               </div>
+              )}
 
               {/* Pinpoint Users */}
+              {isScoreVisible("users_score") && (
               <div 
-                className="p-3 rounded-[12px] bg-card/50 hover:bg-card/80 transition-all duration-300 space-y-1 cursor-pointer hover:shadow-md"
-                onClick={() => {
+                className={`p-3 rounded-[12px] bg-card/50 transition-all duration-300 space-y-1 ${!isAdmin ? 'hover:bg-card/80 cursor-pointer hover:shadow-md' : ''}`}
+                onClick={!isAdmin ? () => {
                   setScoresDialogOpen(false);
                   setTimeout(() => {
                     document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }, 100);
-                }}
+                } : undefined}
               >
-                <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Pinpoint Users</p>
-                <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#C85250" }}>5.2</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Pinpoint Users</p>
+                  {isAdmin && (
+                    <ScoreToggle
+                      toolId={tool.id}
+                      scoreName="users_score"
+                      visible={scoreVisibility.users_score}
+                      onToggle={handleScoreToggle}
+                    />
+                  )}
+                </div>
+                {isAdmin ? (
+                  <EditableScore
+                    value={tool.users_score ?? 5.2}
+                    onSave={(v) => saveScore("users_score", v)}
+                    label="Users Score"
+                  />
+                ) : (
+                  <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#C85250" }}>
+                    {tool.users_score?.toFixed(1) || '5.2'}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground/80 leading-tight">Community ratings</p>
               </div>
+              )}
 
               {/* Trust and Transparency */}
-              <div className="p-3 rounded-[12px] bg-card/50 transition-all duration-300 space-y-1 col-span-2 opacity-60">
-                <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Trust and Transparency</p>
-                <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#C9A94E" }}>7.2</p>
+              {isScoreVisible("trust_score") && (
+              <div className={`p-3 rounded-[12px] bg-card/50 transition-all duration-300 space-y-1 col-span-2 ${!isAdmin ? 'opacity-60' : ''}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm text-muted-foreground" style={{ fontWeight: 600 }}>Trust and Transparency</p>
+                  {isAdmin && (
+                    <ScoreToggle
+                      toolId={tool.id}
+                      scoreName="trust_score"
+                      visible={scoreVisibility.trust_score}
+                      onToggle={handleScoreToggle}
+                    />
+                  )}
+                </div>
+                {isAdmin ? (
+                  <EditableScore
+                    value={tool.trust_score ?? 7.2}
+                    onSave={(v) => saveScore("trust_score", v)}
+                    label="Trust Score"
+                  />
+                ) : (
+                  <p className="text-2xl tracking-tight" style={{ fontWeight: 700, color: "#C9A94E" }}>
+                    {tool.trust_score?.toFixed(1) || '7.2'}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground/80 leading-tight">Company ethics and data practices</p>
               </div>
+              )}
             </div>
           </div>
         </DialogContent>
@@ -3135,7 +3559,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                 <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-card rounded-[16px] p-4 border-2 border-primary/30">
                   <div className="text-center space-y-1">
                     <p className="text-xs text-muted-foreground" style={{ fontWeight: 600 }}>Pinpoint Score</p>
-                    <p className="text-5xl tracking-tight" style={{ fontWeight: 700, color: "#6E7E55" }}>{tool.overall_score?.toFixed(1) || '8.0'}</p>
+                    <p className="text-5xl tracking-tight" style={{ fontWeight: 700, color: "#6E7E55" }}>{(tool.pinpoint_score ?? tool.overall_score)?.toFixed(1) || '8.0'}</p>
                     <p className="text-[10px] text-muted-foreground/80">Weighted average of all metrics</p>
                   </div>
                 </div>

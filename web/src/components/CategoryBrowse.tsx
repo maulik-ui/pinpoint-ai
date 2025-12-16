@@ -252,6 +252,7 @@ interface Tool {
   logo_url: string | null;
   pricing_model: string | null;
   overall_score: number | null;
+  pinpoint_score?: number | null;
 }
 
 interface CategoryBrowseProps {
@@ -305,9 +306,19 @@ export function CategoryBrowse({ onSelectCategory, selectedCategoryId, categoryC
       }
 
       // Log for debugging
-      console.log("Tools fetched:", data.tools?.map((t: Tool) => ({ name: t.name, overall_score: t.overall_score })));
+      console.log("Tools fetched:", data.tools?.map((t: Tool) => ({ name: t.name, pinpoint_score: t.pinpoint_score, overall_score: t.overall_score })));
 
-      setTools(data.tools || []);
+      // Ensure tools are sorted by score (highest first)
+      const sortedTools = (data.tools || []).sort((a: Tool, b: Tool) => {
+        const scoreA = a.pinpoint_score ?? a.overall_score ?? 0;
+        const scoreB = b.pinpoint_score ?? b.overall_score ?? 0;
+        if (scoreB !== scoreA) {
+          return scoreB - scoreA; // Descending order
+        }
+        return (a.name || '').localeCompare(b.name || '');
+      });
+
+      setTools(sortedTools);
     } catch (err) {
       console.error("Error fetching tools by category:", err);
       setToolsError(err instanceof Error ? err.message : "Failed to load tools");
@@ -474,9 +485,9 @@ export function CategoryBrowse({ onSelectCategory, selectedCategoryId, categoryC
                             )}
                           </div>
                         </div>
-                        {tool.overall_score !== null && tool.overall_score !== undefined && tool.overall_score > 0 ? (
+                        {(tool.pinpoint_score ?? tool.overall_score) !== null && (tool.pinpoint_score ?? tool.overall_score) !== undefined && (tool.pinpoint_score ?? tool.overall_score)! > 0 ? (
                           <div className="flex-shrink-0">
-                            <ScoreCircle score={tool.overall_score} size={84} strokeWidth={6} />
+                            <ScoreCircle score={tool.pinpoint_score ?? tool.overall_score ?? 0} size={84} strokeWidth={6} />
                           </div>
                         ) : (
                           <div className="flex flex-col items-center justify-center rounded-full border-2 border-primary/30 bg-primary/5 flex-shrink-0" style={{ width: '5.25rem', height: '5.25rem' }}>

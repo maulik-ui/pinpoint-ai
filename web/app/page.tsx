@@ -11,6 +11,7 @@ type Tool = {
   short_description: string | null;
   logo_url: string | null;
   overall_score: number | null;
+  pinpoint_score?: number | null;
 };
 
 type AlphaBarTool = {
@@ -27,7 +28,8 @@ export default async function Home() {
   // Fetch featured tools (top 3 by score or most recent)
   const { data: tools } = await supabase
     .from("tools")
-    .select("id, name, slug, category, short_description, logo_url, overall_score")
+    .select("id, name, slug, category, short_description, logo_url, overall_score, pinpoint_score")
+    .order("pinpoint_score", { ascending: false, nullsLast: true })
     .order("overall_score", { ascending: false, nullsLast: true })
     .limit(3);
 

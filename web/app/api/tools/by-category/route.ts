@@ -56,8 +56,9 @@ export async function GET(request: NextRequest) {
     // Fetch tools by category
     const { data: tools, error } = await supabase
       .from("tools")
-      .select("id, name, slug, short_description, category, logo_url, pricing_model, overall_score")
+      .select("id, name, slug, short_description, category, logo_url, pricing_model, overall_score, pinpoint_score")
       .eq("category", categoryName)
+      .order("pinpoint_score", { ascending: false, nullsLast: true })
       .order("overall_score", { ascending: false, nullsLast: true })
       .order("name", { ascending: true });
 
@@ -92,13 +93,25 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Enrich tools with sentiment scores as fallback (same logic as tool page)
+    // Enrich tools with pinpoint_score, fallback to overall_score, then sentiment scores
     const enrichedTools = (tools || []).map((tool: any) => {
-      const displayScore = tool.overall_score || sentimentMap.get(tool.id) || null;
+      const displayScore = tool.pinpoint_score ?? tool.overall_score ?? sentimentMap.get(tool.id) ?? null;
       return {
         ...tool,
-        overall_score: displayScore,
+        overall_score: displayScore, // Keep for backward compatibility
+        pinpoint_score: tool.pinpoint_score ?? tool.overall_score ?? sentimentMap.get(tool.id) ?? null,
       };
+    });
+
+    // Re-sort after enrichment to ensure correct order (highest score first)
+    enrichedTools.sort((a: any, b: any) => {
+      const scoreA = a.pinpoint_score ?? a.overall_score ?? 0;
+      const scoreB = b.pinpoint_score ?? b.overall_score ?? 0;
+      if (scoreB !== scoreA) {
+        return scoreB - scoreA; // Descending order
+      }
+      // If scores are equal, sort by name
+      return (a.name || '').localeCompare(b.name || '');
     });
 
     return NextResponse.json({

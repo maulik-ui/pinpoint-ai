@@ -15,8 +15,23 @@ import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { ScoreCircle } from "./ScoreCircle";
 import ToolLogo from "./ToolLogo";
 
+interface AlphaBarTool {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl?: string | null;
+  companyName?: string | null;
+  description?: string | null;
+  image?: string;
+  isSponsored?: boolean;
+  score?: number;
+  pricingModel?: string | null;
+  pinpoint_score?: number | null;
+}
+
 interface AlphaBarProps {
   onSelectTool?: (toolId: string) => void;
+  tools?: AlphaBarTool[];
 }
 
 // Placeholder data matching Figma design
@@ -59,8 +74,11 @@ const placeholderTools = [
   }
 ];
 
-export function AlphaBar({ onSelectTool }: AlphaBarProps) {
+export function AlphaBar({ onSelectTool, tools }: AlphaBarProps) {
   const router = useRouter();
+  
+  // Use provided tools or fallback to placeholder
+  const displayTools = tools && tools.length > 0 ? tools : placeholderTools;
 
   const handleToolClick = (toolSlug: string, toolId: string) => {
     if (onSelectTool) {
@@ -69,6 +87,11 @@ export function AlphaBar({ onSelectTool }: AlphaBarProps) {
       router.push(`/tool/${toolSlug}`);
     }
   };
+
+  // Don't render if no tools
+  if (!displayTools || displayTools.length === 0) {
+    return null;
+  }
 
   return (
     <section className="px-4 md:px-8 py-8 bg-accent/5 border-y border-border/30">
@@ -91,7 +114,7 @@ export function AlphaBar({ onSelectTool }: AlphaBarProps) {
 
         {/* Tool Cards */}
         <div className="grid md:grid-cols-3 gap-4">
-          {placeholderTools.map((tool) => (
+          {displayTools.slice(0, 3).map((tool) => (
             <div
               key={tool.id}
               onClick={() => handleToolClick(tool.slug, tool.id)}
@@ -160,7 +183,7 @@ export function AlphaBar({ onSelectTool }: AlphaBarProps) {
                   
                   {/* Circular Score */}
                   <div className="flex-shrink-0">
-                    <ScoreCircle score={tool.score} size={56} strokeWidth={5} />
+                    <ScoreCircle score={tool.pinpoint_score ?? tool.score ?? 0} size={56} strokeWidth={5} />
                   </div>
                 </div>
 

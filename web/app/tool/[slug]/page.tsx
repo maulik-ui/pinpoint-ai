@@ -36,6 +36,36 @@ type Tool = {
   backlinks_count: number | null;
   spam_score: number | null;
   company_name: string | null;
+  pinpoint_score?: number | null;
+  sentiment_score?: number | null;
+  features_score?: number | null;
+  adoption_score?: number | null;
+  pricing_score?: number | null;
+  verification_score?: number | null;
+  users_score?: number | null;
+  trust_score?: number | null;
+  section_visibility?: {
+    overview?: boolean;
+    traction?: boolean;
+    features?: boolean;
+    proscons?: boolean;
+    editor?: boolean;
+    verification?: boolean;
+    sentiment?: boolean;
+    demos?: boolean;
+    pricing?: boolean;
+    alternatives?: boolean;
+  } | null;
+  score_visibility?: {
+    pinpoint_score?: boolean;
+    sentiment_score?: boolean;
+    features_score?: boolean;
+    adoption_score?: boolean;
+    pricing_score?: boolean;
+    verification_score?: boolean;
+    users_score?: boolean;
+    trust_score?: boolean;
+  } | null;
 };
 
 type AlternativeTool = {
@@ -46,6 +76,7 @@ type AlternativeTool = {
   short_description: string | null;
   logo_url: string | null;
   overall_score: number | null;
+  pinpoint_score?: number | null;
 };
 
 type ToolPageProps = {
@@ -66,7 +97,7 @@ export default async function ToolPageServer({ params }: ToolPageProps) {
   // Try to fetch with all columns first
   const result = await supabase
     .from("tools")
-    .select("id, name, slug, short_description, category, logo_url, website_url, pricing_model, overall_score, tool_overview, domain_data, domain_score, organic_etv, organic_keywords, domain_rank, referring_domains, backlinks_count, spam_score, company_name")
+    .select("id, name, slug, short_description, category, logo_url, website_url, pricing_model, overall_score, tool_overview, domain_data, domain_score, organic_etv, organic_keywords, domain_rank, referring_domains, backlinks_count, spam_score, company_name, section_visibility, pinpoint_score, sentiment_score, features_score, adoption_score, pricing_score, verification_score, users_score, trust_score, score_visibility")
     .eq("slug", normalizedSlug)
     .maybeSingle<Tool>();
 
@@ -86,7 +117,7 @@ export default async function ToolPageServer({ params }: ToolPageProps) {
   }
 
   // If some columns don't exist, retry with basic columns
-  if (toolError && (toolError.message?.includes("tool_overview") || toolError.message?.includes("domain_data") || toolError.message?.includes("company_name") || toolError.code === "PGRST116")) {
+  if (toolError && (toolError.message?.includes("tool_overview") || toolError.message?.includes("domain_data") || toolError.message?.includes("company_name") || toolError.message?.includes("section_visibility") || toolError.message?.includes("score_visibility") || toolError.message?.includes("pinpoint_score") || toolError.code === "PGRST116")) {
     console.warn("Some columns not found, retrying with basic columns", {
       error: toolError,
       message: toolError.message,
@@ -121,6 +152,16 @@ export default async function ToolPageServer({ params }: ToolPageProps) {
       backlinks_count: null,
       spam_score: null,
       company_name: null,
+      section_visibility: null,
+      pinpoint_score: null,
+      sentiment_score: null,
+      features_score: null,
+      adoption_score: null,
+      pricing_score: null,
+      verification_score: null,
+      users_score: null,
+      trust_score: null,
+      score_visibility: null,
     } as Tool : null;
   } else if (toolError && (toolError.message || toolError.code)) {
     // Only log error if it has meaningful information
@@ -216,9 +257,10 @@ export default async function ToolPageServer({ params }: ToolPageProps) {
       if (alternatives.length < 3) {
         const { data: moreData } = await supabase
           .from("tools")
-          .select("id, name, slug, category, short_description, logo_url, overall_score")
+          .select("id, name, slug, category, short_description, logo_url, overall_score, pinpoint_score")
           .neq("id", tool.id)
-          .order("overall_score", { ascending: false })
+          .order("pinpoint_score", { ascending: false, nullsLast: true })
+          .order("overall_score", { ascending: false, nullsLast: true })
           .limit(10);
 
         const existingIds = new Set(alternatives.map((a) => a.id));
@@ -232,6 +274,66 @@ export default async function ToolPageServer({ params }: ToolPageProps) {
   } catch (error) {
     console.error("Error loading alternatives", error);
     // Continue without alternatives if it fails
+  }
+
+  // Determine if this tool is #1 in its category
+  let isTopInCategory = false;
+  if (tool.category) {
+    try {
+      // Fetch ALL tools in the category (including current tool) to determine ranking
+      const { data: allCategoryTools } = await supabase
+        .from("tools")
+        .select("id, name, slug, pinpoint_score, overall_score")
+        .eq("category", tool.category);
+      
+      if (allCategoryTools && allCategoryTools.length > 0) {
+        // Fetch sentiment aggregates for enrichment
+        const toolIds = allCategoryTools.map((t: any) => t.id);
+        let sentimentMap = new Map<string, number>();
+        
+        const { data: aggregates } = await supabase
+          .from("sentiment_aggregate")
+          .select("tool_id, final_score_0_to_10")
+          .in("tool_id", toolIds)
+          .order("run_at", { ascending: false });
+
+        if (aggregates) {
+          const seen = new Set<string>();
+          aggregates.forEach((agg: any) => {
+            if (!seen.has(agg.tool_id) && agg.final_score_0_to_10 !== null) {
+              sentimentMap.set(agg.tool_id, agg.final_score_0_to_10);
+              seen.add(agg.tool_id);
+            }
+          });
+        }
+
+        // Enrich and sort tools
+        const enrichedTools = allCategoryTools.map((t: any) => ({
+          ...t,
+          pinpoint_score: t.pinpoint_score ?? t.overall_score ?? sentimentMap.get(t.id) ?? null,
+        }));
+
+        enrichedTools.sort((a: any, b: any) => {
+          const scoreA = a.pinpoint_score ?? a.overall_score ?? 0;
+          const scoreB = b.pinpoint_score ?? b.overall_score ?? 0;
+          if (scoreB !== scoreA) {
+            return scoreB - scoreA;
+          }
+          return (a.name || '').localeCompare(b.name || '');
+        });
+
+        // Check if current tool is #1
+        if (enrichedTools.length > 0 && enrichedTools[0].id === tool.id) {
+          const topScore = enrichedTools[0].pinpoint_score ?? enrichedTools[0].overall_score;
+          if (topScore !== null && topScore !== undefined && topScore > 0) {
+            isTopInCategory = true;
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error determining category rank", error);
+      // Continue without rank check if it fails
+    }
   }
 
   // Fetch Similarweb data
@@ -353,6 +455,7 @@ export default async function ToolPageServer({ params }: ToolPageProps) {
       alternatives={alternatives}
       similarwebReport={similarwebReport}
       similarwebMonthlyData={similarwebMonthlyData}
+      isTopInCategory={isTopInCategory}
     />
   );
 }

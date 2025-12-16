@@ -13,6 +13,8 @@ type Tool = {
   name: string;
   slug: string;
   logo_url: string | null;
+  pinpoint_score?: number | null;
+  overall_score?: number | null;
 };
 
 export const dynamic = "force-dynamic";
@@ -21,7 +23,7 @@ export default async function AdminToolsPage() {
   noStore();
   const { data: tools, error } = await supabase
     .from("tools")
-    .select("id, name, slug, logo_url")
+    .select("id, name, slug, logo_url, pinpoint_score, overall_score")
     .order("name", { ascending: true });
   const toolList = (tools ?? []) as Tool[];
 
@@ -85,14 +87,24 @@ export default async function AdminToolsPage() {
                 <Link
                   key={tool.id}
                   href={`/admin/tool/${tool.slug}/edit`}
-                  className="flex items-center gap-4 rounded-[16px] border border-border/50 bg-card p-5 hover:border-primary/30 hover:shadow-md transition-all"
+                  className="flex items-center justify-between gap-4 rounded-[16px] border border-border/50 bg-card p-5 hover:border-primary/30 hover:shadow-md transition-all"
                 >
-                  <ToolLogo
-                    logoUrl={tool.logo_url}
-                    toolName={tool.name}
-                    size="md"
-                  />
-                  <span className="font-semibold text-lg">{tool.name}</span>
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <ToolLogo
+                      logoUrl={tool.logo_url}
+                      toolName={tool.name}
+                      size="md"
+                    />
+                    <span className="font-semibold text-lg truncate">{tool.name}</span>
+                  </div>
+                  {(tool.pinpoint_score ?? tool.overall_score) !== null && (tool.pinpoint_score ?? tool.overall_score) !== undefined && (
+                    <div className="flex-shrink-0 text-right">
+                      <div className="text-sm text-muted-foreground mb-0.5">Score</div>
+                      <div className="text-xl font-bold" style={{ color: "#6E7E55" }}>
+                        {(tool.pinpoint_score ?? tool.overall_score)?.toFixed(1)}
+                      </div>
+                    </div>
+                  )}
                 </Link>
               ))}
             </div>

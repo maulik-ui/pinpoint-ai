@@ -19,6 +19,7 @@ type Tool = {
   short_description: string | null;
   logo_url: string | null;
   overall_score: number | null;
+  pinpoint_score?: number | null;
 };
 
 type AlphaBarTool = {
