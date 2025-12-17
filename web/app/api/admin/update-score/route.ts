@@ -32,6 +32,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Handle null/empty values - allow clearing the score
+    if (value === null || value === "") {
+      const { error } = await supabase
+        .from("tools")
+        .update({ [scoreName]: null })
+        .eq("id", toolId);
+
+      if (error) {
+        console.error("Error clearing score:", error);
+        return NextResponse.json(
+          { error: error.message },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
     // Validate value is between 0 and 10
     const numValue = Number(value);
     if (isNaN(numValue) || numValue < 0 || numValue > 10) {

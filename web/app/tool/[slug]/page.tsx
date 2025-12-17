@@ -27,6 +27,7 @@ type Tool = {
   pricing_model: string | null;
   overall_score: number | null;
   tool_overview: string | null;
+  capabilities_text: string | null;
   domain_data: any | null;
   domain_score: number | null;
   organic_etv: number | null;
@@ -77,6 +78,7 @@ type AlternativeTool = {
   logo_url: string | null;
   overall_score: number | null;
   pinpoint_score?: number | null;
+  company_name: string | null;
 };
 
 type ToolPageProps = {
@@ -97,7 +99,7 @@ export default async function ToolPageServer({ params }: ToolPageProps) {
   // Try to fetch with all columns first
   const result = await supabase
     .from("tools")
-    .select("id, name, slug, short_description, category, logo_url, website_url, pricing_model, overall_score, tool_overview, domain_data, domain_score, organic_etv, organic_keywords, domain_rank, referring_domains, backlinks_count, spam_score, company_name, section_visibility, pinpoint_score, sentiment_score, features_score, adoption_score, pricing_score, verification_score, users_score, trust_score, score_visibility")
+    .select("id, name, slug, short_description, category, logo_url, website_url, pricing_model, overall_score, tool_overview, capabilities_text, domain_data, domain_score, organic_etv, organic_keywords, domain_rank, referring_domains, backlinks_count, spam_score, company_name, section_visibility, pinpoint_score, sentiment_score, features_score, adoption_score, pricing_score, verification_score, users_score, trust_score, score_visibility")
     .eq("slug", normalizedSlug)
     .maybeSingle<Tool>();
 
@@ -143,6 +145,7 @@ export default async function ToolPageServer({ params }: ToolPageProps) {
     tool = retryResult.data ? { 
       ...retryResult.data, 
       tool_overview: null,
+      capabilities_text: retryResult.data.capabilities_text || null,
       domain_data: null,
       domain_score: null,
       organic_etv: null,
@@ -226,7 +229,7 @@ export default async function ToolPageServer({ params }: ToolPageProps) {
   try {
     let alternativesQuery = supabase
       .from("tools")
-      .select("id, name, slug, category, short_description, logo_url, overall_score")
+      .select("id, name, slug, category, short_description, logo_url, overall_score, company_name")
       .neq("id", tool.id)
       .limit(10);
 
@@ -257,10 +260,10 @@ export default async function ToolPageServer({ params }: ToolPageProps) {
       if (alternatives.length < 3) {
         const { data: moreData } = await supabase
           .from("tools")
-          .select("id, name, slug, category, short_description, logo_url, overall_score, pinpoint_score")
+          .select("id, name, slug, category, short_description, logo_url, overall_score, pinpoint_score, company_name")
           .neq("id", tool.id)
-          .order("pinpoint_score", { ascending: false, nullsLast: true })
-          .order("overall_score", { ascending: false, nullsLast: true })
+          .order("pinpoint_score", { ascending: false, nullsFirst: false })
+          .order("overall_score", { ascending: false, nullsFirst: false })
           .limit(10);
 
         const existingIds = new Set(alternatives.map((a) => a.id));

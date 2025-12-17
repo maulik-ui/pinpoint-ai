@@ -57,7 +57,7 @@ export async function GET(
         .from("tools")
         .select("id, name, slug, category, short_description, logo_url, overall_score")
         .neq("id", currentTool.id)
-        .order("overall_score", { ascending: false, nullsLast: true })
+        .order("overall_score", { ascending: false, nullsFirst: false })
         .limit(10);
 
       // Merge and deduplicate

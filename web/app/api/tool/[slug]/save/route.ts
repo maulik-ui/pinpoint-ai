@@ -27,16 +27,16 @@ async function createServerClient(request: NextRequest) {
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: false,
-    },
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value;
-      },
-      set() {
-        // No-op in API routes
-      },
-      remove() {
-        // No-op in API routes
+      storage: {
+        getItem: (key: string) => {
+          return cookieStore.get(key)?.value ?? null;
+        },
+        setItem: () => {
+          // No-op in API routes
+        },
+        removeItem: () => {
+          // No-op in API routes
+        },
       },
     },
   });

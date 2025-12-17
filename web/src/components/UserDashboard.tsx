@@ -94,7 +94,10 @@ export default function UserDashboard() {
         console.error("Error fetching saved tools:", error);
         setSavedTools([]);
       } else {
-        setSavedTools((data || []) as SavedTool[]);
+        setSavedTools((data || []).map((item: any) => ({
+          ...item,
+          tools: Array.isArray(item.tools) ? item.tools[0] : item.tools,
+        })) as SavedTool[]);
       }
     } catch (error) {
       console.error("Error fetching saved tools:", error);
@@ -319,7 +322,7 @@ export default function UserDashboard() {
                               <div className="flex items-center justify-between">
                                 <div>
                                   <h3 className="text-lg mb-1" style={{ fontWeight: 600 }}>
-                                    {order.product_type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                    {order.product_type.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}
                                   </h3>
                                   <p className="text-sm text-muted-foreground">
                                     Status: {order.status}

@@ -58,8 +58,8 @@ export async function GET(request: NextRequest) {
       .from("tools")
       .select("id, name, slug, short_description, category, logo_url, pricing_model, overall_score, pinpoint_score")
       .eq("category", categoryName)
-      .order("pinpoint_score", { ascending: false, nullsLast: true })
-      .order("overall_score", { ascending: false, nullsLast: true })
+      .order("pinpoint_score", { ascending: false, nullsFirst: false })
+      .order("overall_score", { ascending: false, nullsFirst: false })
       .order("name", { ascending: true });
 
     if (error) {

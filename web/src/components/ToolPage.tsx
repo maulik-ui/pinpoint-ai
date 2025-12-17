@@ -100,6 +100,7 @@ interface Tool {
   website_url: string | null;
   pricing_model: string | null;
   overall_score: number | null;
+  tool_overview: string | null;
   capabilities_text: string | null;
   domain_data: any | null;
   domain_score: number | null;
@@ -419,7 +420,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
   };
   
   const [sectionVisibility, setSectionVisibility] = useState(
-    tool.section_visibility || defaultVisibility
+    { ...defaultVisibility, ...(tool.section_visibility || {}) }
   );
   
   const handleSectionToggle = (section: string, visible: boolean) => {
@@ -451,7 +452,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
   };
   
   const [scoreVisibility, setScoreVisibility] = useState(
-    tool.score_visibility || defaultScoreVisibility
+    { ...defaultScoreVisibility, ...(tool.score_visibility || {}) }
   );
   
   const handleScoreToggle = (scoreName: string, visible: boolean) => {
@@ -1128,7 +1129,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                   <EditableText
                     value={tool.tool_overview || tool.capabilities_text || ""}
                     onSave={(v) => saveToolField("tool_overview", v)}
-                    as="div"
+                    as="p"
                     multiline={true}
                     rows={8}
                     className="w-full"
@@ -1165,7 +1166,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                 </div>
               ) : (
                 <div className="pt-3 grid md:grid-cols-2 gap-3">
-                  {functionalityBlocks.map((block, index) => (
+                  {functionalityBlocks.map((block: { title: string; description: string }, index: number) => (
                     <div key={index} className="flex items-start gap-3 p-3 bg-card rounded-[12px] border border-border/30">
                       <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" strokeWidth={2.5} />
                       <div>
@@ -1554,7 +1555,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                             />
                           ) : (
                             <div className="space-y-4">
-                              {displayedPros.map((pro, index) => (
+                              {displayedPros.map((pro: string, index: number) => (
                                 <div key={index} className="flex items-start gap-3">
                                   <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-2" />
                                   <p className="text-foreground/85" style={{ lineHeight: 1.7 }}>{pro}</p>
@@ -1601,7 +1602,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                             />
                           ) : (
                             <div className="space-y-4">
-                              {displayedCons.map((con, index) => (
+                              {displayedCons.map((con: string, index: number) => (
                                 <div key={index} className="flex items-start gap-3">
                                   <div className="w-2 h-2 rounded-full bg-destructive flex-shrink-0 mt-2" />
                                   <p className="text-foreground/85" style={{ lineHeight: 1.7 }}>{con}</p>
@@ -1664,7 +1665,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                     />
                   ) : (
                     <div className="space-y-4">
-                      {displayedPros.map((pro, index) => (
+                      {displayedPros.map((pro: string, index: number) => (
                         <div key={index} className="flex items-start gap-3">
                           <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-2" />
                           <p className="text-foreground/85" style={{ lineHeight: 1.7 }}>{pro}</p>
@@ -1692,7 +1693,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                     />
                   ) : (
                     <div className="space-y-4">
-                      {displayedCons.map((con, index) => (
+                      {displayedCons.map((con: string, index: number) => (
                         <div key={index} className="flex items-start gap-3">
                           <div className="w-2 h-2 rounded-full bg-destructive flex-shrink-0 mt-2" />
                           <p className="text-foreground/85" style={{ lineHeight: 1.7 }}>{con}</p>
@@ -1803,7 +1804,7 @@ export function ToolPage({ tool, features, sentimentRuns, sentimentAggregate, al
                   <div className="relative">
                     <div className="absolute left-8 top-8 bottom-8 w-0.5 bg-primary/30" />
                     <div className="space-y-5">
-                      {verificationHistory.map((item, index) => (
+                      {verificationHistory.map((item: { date: string; title: string; description: string; isLatest?: boolean }, index: number) => (
                         <motion.div 
                           key={index}
                           className="flex items-start gap-4"

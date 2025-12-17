@@ -181,7 +181,7 @@ export function SavedTools({ onSelectTool }: SavedToolsProps) {
             </div>
             {savedTool.tools.overall_score !== null && savedTool.tools.overall_score !== undefined && (
               <div className="flex-shrink-0">
-                <ScoreCircle score={savedTool.tools.overall_score} size="sm" />
+                <ScoreCircle score={savedTool.tools.overall_score} size={48} />
               </div>
             )}
           </div>

@@ -69,7 +69,7 @@ export function useFounderStatus(): FounderStatus {
   }, []);
 
   const hasListedTools = activeOrders.some(
-    (order) => order.product_type === "new_tool_listing" && order.status === "completed"
+    (order) => order.productId === "new_tool_listing" && order.status === "completed"
   );
 
   return {

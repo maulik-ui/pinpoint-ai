@@ -26,6 +26,11 @@ async function main() {
   console.log(`📁 File Key: ${fileKey}\n`);
 
   try {
+    if (!fileKey) {
+      console.error("Error: FIGMA_FILE_KEY environment variable is not set");
+      process.exit(1);
+    }
+    
     const result = await syncDesignTokens({
       fileKey,
       generateCSS: true,

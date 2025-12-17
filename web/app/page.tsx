@@ -29,8 +29,8 @@ export default async function Home() {
   const { data: tools } = await supabase
     .from("tools")
     .select("id, name, slug, category, short_description, logo_url, overall_score, pinpoint_score")
-    .order("pinpoint_score", { ascending: false, nullsLast: true })
-    .order("overall_score", { ascending: false, nullsLast: true })
+    .order("pinpoint_score", { ascending: false, nullsFirst: false })
+    .order("overall_score", { ascending: false, nullsFirst: false })
     .limit(3);
 
   const featuredTools = (tools ?? []) as Tool[];

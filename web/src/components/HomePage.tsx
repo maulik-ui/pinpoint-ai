@@ -163,11 +163,7 @@ export default function HomePage({
             <span className="text-3xl tracking-tight" style={{ fontWeight: 500 }}>Pinpoint AI</span>
           </Link>
           <div className="flex items-center gap-4">
-            <HamburgerMenu 
-              onNavigate={handleNavigate}
-              isDarkMode={isDarkMode}
-              onToggleDarkMode={() => setTheme(isDarkMode ? "light" : "dark")}
-            />
+            <HamburgerMenu />
           </div>
         </div>
       </nav>

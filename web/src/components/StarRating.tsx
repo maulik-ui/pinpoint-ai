@@ -39,8 +39,6 @@ export function StarRating({ toolId, toolSlug, className = "" }: StarRatingProps
           code: error.code,
           details: error.details,
           hint: error.hint,
-          status: error.status,
-          statusText: error.statusText,
         });
         
         // Handle specific error cases

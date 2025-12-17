@@ -40,11 +40,7 @@ export function Navigation({
             <Logo size="md" />
           </div>
         </div>
-        <HamburgerMenu 
-          onNavigate={onNavigate}
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={() => setTheme(isDarkMode ? "light" : "dark")}
-        />
+        <HamburgerMenu />
       </div>
     </nav>
   );

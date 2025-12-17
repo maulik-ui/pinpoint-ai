@@ -116,18 +116,8 @@ export async function importSimilarwebData(
     if (parsedData.avgVisitDurationSeconds !== undefined && parsedData.avgVisitDurationSeconds !== null && parsedData.avgVisitDurationSeconds !== 0) {
       reportData.avg_visit_duration_seconds = parsedData.avgVisitDurationSeconds;
     }
-    if (parsedData.uniqueVisitors !== undefined && parsedData.uniqueVisitors !== null && parsedData.uniqueVisitors !== 0) {
-      reportData.unique_visitors = parsedData.uniqueVisitors;
-    }
-    if (parsedData.desktopPercentage !== undefined && parsedData.desktopPercentage !== null && parsedData.desktopPercentage !== 0) {
-      reportData.desktop_percentage = parsedData.desktopPercentage;
-    }
-    if (parsedData.mobilePercentage !== undefined && parsedData.mobilePercentage !== null && parsedData.mobilePercentage !== 0) {
-      reportData.mobile_percentage = parsedData.mobilePercentage;
-    }
-    if (parsedData.totalPageViews !== undefined && parsedData.totalPageViews !== null && parsedData.totalPageViews !== 0) {
-      reportData.total_page_views = parsedData.totalPageViews;
-    }
+    // Note: uniqueVisitors, desktopPercentage, mobilePercentage, and totalPageViews are not in ParsedSimilarwebData interface
+    // If needed, add them to the interface first
     if (parsedData.globalRank !== undefined && parsedData.globalRank !== null && parsedData.globalRank !== 0) {
       reportData.global_rank = parsedData.globalRank;
     }

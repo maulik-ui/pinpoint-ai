@@ -183,7 +183,7 @@ export function AlphaBar({ onSelectTool, tools }: AlphaBarProps) {
                   
                   {/* Circular Score */}
                   <div className="flex-shrink-0">
-                    <ScoreCircle score={tool.pinpoint_score ?? tool.score ?? 0} size={56} strokeWidth={5} />
+                    <ScoreCircle score={(tool as AlphaBarTool).pinpoint_score ?? tool.score ?? 0} size={56} strokeWidth={5} />
                   </div>
                 </div>
 

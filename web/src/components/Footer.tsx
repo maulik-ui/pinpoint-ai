@@ -4,7 +4,7 @@ import Link from "next/link";
 import Logo from "./Logo";
 
 interface FooterProps {
-  onNavigate?: (page: 'home' | 'about' | 'pricing' | 'privacy' | 'terms' | 'cookies') => void;
+  onNavigate?: (page: 'home' | 'about' | 'pricing' | 'privacy' | 'terms' | 'cookies' | 'submit-tool') => void;
   onContactClick?: () => void;
   compact?: boolean;
 }

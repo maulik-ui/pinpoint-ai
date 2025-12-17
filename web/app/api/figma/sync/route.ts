@@ -3,10 +3,9 @@ import {
   extractColorTokens, 
   extractTypographyTokens, 
   extractSpacingTokens,
-  generateCSSVariables,
-  type DesignTokens 
+  generateCSSVariables
 } from "@/src/lib/figma-sync";
-import { getFigmaFile } from "@/src/lib/figma";
+import { getFigmaFile, type DesignTokens } from "@/src/lib/figma";
 import { writeFileSync } from "fs";
 import { join } from "path";
 

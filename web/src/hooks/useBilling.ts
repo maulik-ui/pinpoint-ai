@@ -257,7 +257,7 @@ export function useFounderStatus() {
     activeOrders,
     activeAlphaSlots,
     hasActiveRechecks: listedTools.some((tool) => tool.hasActiveRecheck),
-    hasActiveSponsorship: activeAlphaSlots.some((slot) => slot.is_sponsored),
+    hasActiveSponsorship: activeAlphaSlots.some((slot) => slot.isSponsored),
     isLoading,
   };
 }
@@ -307,7 +307,7 @@ export function useSavedTools() {
         }
 
         // Transform to SavedTool format
-        const transformed: SavedTool[] = (savedData || [])
+        const transformed = (savedData || [])
           .map((item: any) => {
             const tool = item.tools;
             if (!tool) return null;
@@ -322,7 +322,7 @@ export function useSavedTools() {
               savedAt: new Date(item.created_at),
             };
           })
-          .filter((tool): tool is SavedTool => tool !== null);
+          .filter((tool) => tool !== null) as SavedTool[];
 
         setSavedTools(transformed);
       } catch (err) {
@@ -559,7 +559,7 @@ export function useAlphaBarSlots() {
         }
 
         // Transform the data to match component interface
-        const transformedSlots: AlphaBarSlotDisplay[] = (data || [])
+        const transformedSlots = (data || [])
           .map((slot: any) => {
             const tool = slot.tools;
             if (!tool) return null;
@@ -589,7 +589,7 @@ export function useAlphaBarSlots() {
               },
             };
           })
-          .filter((slot): slot is AlphaBarSlotDisplay => slot !== null);
+          .filter((slot) => slot !== null) as AlphaBarSlotDisplay[];
 
         // If no real slots found, use mock data for development
         if (transformedSlots.length === 0) {

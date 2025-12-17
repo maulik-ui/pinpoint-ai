@@ -8,10 +8,9 @@ import {
   extractColorTokens, 
   extractTypographyTokens, 
   extractSpacingTokens,
-  generateCSSVariables,
-  type DesignTokens 
+  generateCSSVariables
 } from './figma-sync';
-import { getFigmaFile } from './figma';
+import { getFigmaFile, type DesignTokens } from './figma';
 
 export interface SyncOptions {
   fileKey: string;

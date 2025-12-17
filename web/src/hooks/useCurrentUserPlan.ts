@@ -62,7 +62,7 @@ export function useCurrentUserPlan(): CurrentPlan {
     return () => authSubscription.unsubscribe();
   }, []);
 
-  const plan = subscription ? getPlanById(subscription.plan_id) : getPlanById("free");
+  const plan = subscription ? getPlanById(subscription.planId) : getPlanById("free");
   const isPremium = plan?.id === "premium_monthly" || plan?.id === "premium_yearly";
 
   return {
